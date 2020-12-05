@@ -3,61 +3,111 @@
 namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
+use App\Models\User_M;
 
 class User extends BaseController
 {
-    protected $session = null;
-
-
-    public function __construct()
-    {
-        $this->session = \Config\Services::session();
-    }
 
 
     public function index()
     {
-        echo "User";
+        $pager = \Config\Services::pager();
+        $model = new User_M();
+
+
+        $data = [
+            'judul' => 'DATA USER',
+            'user' => $model->paginate(3, 'page'),
+            'pager' => $model->pager
+        ];
+        return view("user/select", $data);
     }
 
     public function create()
     {
+        $data = [
+            'level' => ['Admin', 'Koki', 'Kasir']
+        ];
+        return view("user/insert", $data);
+    }
+
+    public function insert()
+    {
 
 
+        if (isset($_POST['password'])) {
+            $data = [
+                'user' => $_POST['user'],
+                'email' => $_POST['email'],
+                'password' => password_hash($_POST['password'], PASSWORD_DEFAULT),
+                'level' => $_POST['level'],
+                'aktif' => 1
+            ];
+            $model = new User_M();
+            if ($model->insert($data) === false) {
+                $error = $model->errors();
+                session()->setFlashdata('info', $error);
+                return redirect()->to(base_url("/admin/user/create"));
+            } else {
+                return redirect()->to(base_url("/admin/user"));
+            }
+        }
+    }
 
-        $tbluser = [
-            'user' => 'koki',
-            'email' => 'koki@gmail.com',
-            'level' => 'koki'
 
+    public function delete($id = null)
+    {
+        $model = new User_M();
+        $model->delete($id);
 
+        return redirect()->to(base_url("/admin/user"));
+    }
+
+    public function update($id = null, $isi = 1)
+    {
+        $model = new User_M();
+
+        if ($isi == 0) {
+            $isi = 1;
+        } else {
+            $isi = 0;
+        }
+
+        $data = [
+            'aktif' => $isi
         ];
 
-        $this->session->set($tbluser);
+        $model->update($id, $data);
+        return redirect()->to(base_url("/admin/user"));
     }
-
-    public function read()
+    public function find($id = null)
     {
+        $model = new User_M();
+        $user = $model->find($id);
 
-        $session = \Config\Services::session();
-        echo $this->session->get('user');
-        echo "<br>";
-        echo $this->session->get('email');
-        echo "<br>";
-        echo $this->session->get('level');
+        $data = [
+            'judul' => 'UPDATE DATA',
+            'user' => $user,
+            'level' => ['Admin', 'Koki', 'Kasir']
+        ];
+
+
+        return view("user/update", $data);
     }
 
-    public function delete()
+    public function ubah()
     {
-        $this->session->remove('email');
+        $model = new User_M();
+        $id = $_POST['iduser'];
+
+        $data = [
+            'email' => $_POST['email'],
+            'level' => $_POST['level']
+        ];
+
+        $model->update($id, $data);
+        return redirect()->to(base_url("/admin/user"));
     }
-
-    public function destroy()
-    {
-        $this->session->destroy();
-    }
-
-
 
     //--------------------------------------------------------------------
 
